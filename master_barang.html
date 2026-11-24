@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+{% block page_eyebrow %}Inventaris · Master Data{% endblock %}
+{% block content %}
+<div class="page-section-stack">
+  <section class="stats-grid" aria-label="Ringkasan inventaris">
+    <article class="stat-card stat-total">
+      <div class="stat-icon"><svg class="icon"><use href="#i-database"></use></svg></div>
+      <div class="stat-copy">
+        <p class="stat-label">Total Barang</p>
+        <p class="stat-value" id="statTotal">0</p>
+        <p class="stat-meta">Seluruh unit terdaftar</p>
+      </div>
+    </article>
+    <article class="stat-card stat-available">
+      <div class="stat-icon"><svg class="icon"><use href="#i-check-circle"></use></svg></div>
+      <div class="stat-copy">
+        <p class="stat-label">Tersedia</p>
+        <p class="stat-value" id="statAvailable">0</p>
+        <p class="stat-meta">Siap digunakan</p>
+      </div>
+    </article>
+    <article class="stat-card stat-out">
+      <div class="stat-icon"><svg class="icon"><use href="#i-scan"></use></svg></div>
+      <div class="stat-copy">
+        <p class="stat-label">Keluar</p>
+        <p class="stat-value" id="statOut">0</p>
+        <p class="stat-meta">Sedang di event</p>
+      </div>
+    </article>
+    <article class="stat-card stat-missing">
+      <div class="stat-icon"><svg class="icon"><use href="#i-alert"></use></svg></div>
+      <div class="stat-copy">
+        <p class="stat-label">Tidak Kembali</p>
+        <p class="stat-value" id="statMissing">0</p>
+        <p class="stat-meta">Perlu tindak lanjut</p>
+      </div>
+    </article>
+  </section>
+
+  <div class="master-page-stack">
+    <section class="card master-form-card card-accent">
+      <header class="card-header">
+        <div class="card-header-copy">
+          <h2 class="card-title"><svg class="icon"><use href="#i-plus"></use></svg>Input Cepat Barang</h2>
+          <p class="card-subtitle">Tempel tag RFID, lengkapi nama, lalu tekan Enter untuk simpan.</p>
+        </div>
+        <span class="badge badge-primary no-dot">RFID Input</span>
+      </header>
+      <div class="card-body">
+        <form id="itemForm" class="quick-entry-form" autocomplete="off" novalidate>
+          <div class="quick-entry-epc">
+            <div class="field">
+              <label for="itemEpc">
+                <span>ID / EPC Tag <span class="required-mark">*</span></span>
+                <span class="label-optional">auto-scan</span>
+              </label>
+              <div class="epc-input-shell" id="epcShell">
+                <div class="epc-main-row">
+                  <input
+                    class="input"
+                    type="text"
+                    id="itemEpc"
+                    name="epc"
+                    placeholder="Tempel tag ke antena RFID..."
+                    maxlength="64"
+                    spellcheck="false"
+                    autocomplete="off"
+                    required
+                  >
+                  <span class="epc-state" id="epcStateIcon" title="EPC belum terkunci">
+                    <svg class="icon"><use href="#i-unlock"></use></svg>
+                  </span>
+                </div>
+                <div class="epc-tools">
+                  <span class="epc-lock-copy" id="epcLockCopy">
+                    <span class="status-dot"></span>
+                    <span id="epcLockText">Menunggu tag RFID</span>
+                  </span>
+                  <button type="button" class="btn btn-sm btn-ghost" id="resetEpcBtn">
+                    <svg class="icon"><use href="#i-rotate"></use></svg>
+                    Reset
+                  </button>
+                </div>
+              </div>
+              <p class="field-hint" id="epcHint">EPC terkunci otomatis setelah tag pertama terbaca.</p>
+            </div>
+            <div class="scanning-hint" id="scanHint" role="status">
+              <span class="radio-wave"><svg class="icon"><use href="#i-radio"></use></svg></span>
+              <span id="scanHintText">Scan berjalan — area ini siap menerima EPC baru.</span>
+            </div>
+            <div class="alert alert-warning hidden" id="duplicateWarning" role="alert">
+              <span class="alert-icon"><svg class="icon"><use href="#i-alert"></use></svg></span>
+              <div class="alert-copy">
+                <strong>Barang sudah terdaftar</strong>
+                <span id="duplicateWarningText"></span>
+              </div>
+              <button type="button" class="mini-copy" id="duplicateWarningClose" aria-label="Tutup peringatan" title="Tutup peringatan">
+                <svg class="icon"><use href="#i-x"></use></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="quick-entry-fields">
+            <div class="field quick-entry-name">
+              <label for="itemName">Nama Barang <span class="required-mark">*</span></label>
+              <input class="input" type="text" id="itemName" name="name" placeholder="Contoh: Oculus Quest;" maxlength="180" required>
+            </div>
+            <div class="field">
+              <label for="itemCategory">Kategori</label>
+              <input class="input" type="text" id="itemCategory" name="category" placeholder="VR" maxlength="80" list="categoryOptions">
+              <datalist id="categoryOptions"></datalist>
+            </div>
+            <div class="field">
+              <label for="itemLocation">Lokasi</label>
+              <input class="input" type="text" id="itemLocation" name="location" placeholder="Ruang Aji" maxlength="120">
+            </div>
+            <div class="field quick-entry-notes">
+              <label for="itemNotes">Keterangan <span class="label-optional">opsional</span></label>
+              <textarea class="textarea" id="itemNotes" name="notes" placeholder="Kondisi, nomor seri, atau catatan lain..." maxlength="500" rows="2"></textarea>
+            </div>
+          </div>
+
+          <div class="quick-entry-actions">
+            <button type="submit" class="btn btn-primary" id="saveItemBtn">
+              <svg class="icon"><use href="#i-save"></use></svg>
+              Simpan Barang
+            </button>
+            <button type="button" class="btn btn-ghost" id="clearFormBtn">Bersihkan Form</button>
+            <p class="field-hint quick-entry-hint">
+              <span class="kbd">Enter</span> menyimpan dan menyiapkan form untuk barang berikutnya.
+            </p>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section class="card table-card">
+      <header class="card-header">
+        <div class="card-header-copy">
+          <h2 class="card-title"><svg class="icon"><use href="#i-box"></use></svg>Daftar Master Barang</h2>
+          <p class="card-subtitle" id="tableSubtitle">Memuat data inventaris...</p>
+        </div>
+        <div class="btn-group">
+          <span class="badge badge-neutral no-dot" id="visibleCount">0 item</span>
+          <button type="button" class="icon-btn" id="refreshItemsBtn" title="Muat ulang data" aria-label="Muat ulang data">
+            <svg class="icon"><use href="#i-refresh"></use></svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="table-toolbar">
+        <div class="master-filter-row">
+          <div class="search-field">
+            <svg class="icon"><use href="#i-search"></use></svg>
+            <input class="input" type="search" id="itemSearch" placeholder="Cari EPC, nama, kategori, lokasi..." aria-label="Cari barang">
+          </div>
+          <select class="select" id="categoryFilter" aria-label="Filter kategori">
+            <option value="">Semua kategori</option>
+          </select>
+          <select class="select" id="statusFilter" aria-label="Filter status">
+            <option value="">Semua status</option>
+            <option value="Tersedia">Tersedia</option>
+            <option value="Keluar">Keluar</option>
+            <option value="Tidak Kembali">Tidak Kembali</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table" id="itemsTable">
+          <thead>
+            <tr>
+              <th class="col-no">No</th>
+              <th>ID / EPC</th>
+              <th>Nama Barang</th>
+              <th>Kategori</th>
+              <th>Lokasi</th>
+              <th>Keterangan</th>
+              <th>Status Saat Ini</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="itemsBody">
+            <tr>
+              <td colspan="8">
+                <div class="table-empty">
+                  <div class="empty-icon"><svg class="icon"><use href="#i-loader" style="animation: spin 1s linear infinite;"></use></svg></div>
+                  <h3>Memuat master barang</h3>
+                  <p>Menyiapkan data dari database lokal...</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <footer class="table-footer">
+        <span id="resultSummary">Menampilkan 0 dari 0 barang</span>
+        <span class="status-inline">
+          <span class="status-dot" data-reader-dot style="width:5px;height:5px;"></span>
+          Scan RFID aktif
+        </span>
+      </footer>
+    </section>
+  </div>
+</div>
+
+<dialog class="modal modal-wide" id="editItemDialog" aria-labelledby="editItemTitle">
+  <div class="modal-panel">
+    <div class="modal-head">
+      <div class="modal-icon"><svg class="icon"><use href="#i-edit"></use></svg></div>
+      <div>
+        <h2 id="editItemTitle">Edit Barang</h2>
+        <p class="modal-kicker">Perbarui identitas barang di master inventaris</p>
+      </div>
+      <button type="button" class="icon-btn modal-close" id="editCloseBtn" aria-label="Tutup">
+        <svg class="icon"><use href="#i-x"></use></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="editItemForm" autocomplete="off">
+        <input type="hidden" id="editItemId">
+        <div class="form-grid">
+          <div class="field">
+            <label for="editEpc">ID / EPC <span class="required-mark">*</span></label>
+            <input class="input mono" type="text" id="editEpc" maxlength="64" required>
+            <p class="field-hint" id="editEpcHint">EPC hanya dapat diubah ketika status barang Tersedia.</p>
+          </div>
+          <div class="field">
+            <label for="editCategory">Kategori</label>
+            <input class="input" type="text" id="editCategory" maxlength="80" list="categoryOptions">
+          </div>
+          <div class="field field-span-2">
+            <label for="editName">Nama Barang <span class="required-mark">*</span></label>
+            <input class="input" type="text" id="editName" maxlength="180" required>
+          </div>
+          <div class="field">
+            <label for="editLocation">Lokasi</label>
+            <input class="input" type="text" id="editLocation" maxlength="120">
+          </div>
+          <div class="field">
+            <label for="editStatusReadonly">Status Saat Ini</label>
+            <input class="input" type="text" id="editStatusReadonly" readonly>
+          </div>
+          <div class="field field-span-2">
+            <label for="editNotes">Keterangan</label>
+            <textarea class="textarea" id="editNotes" maxlength="500" rows="3"></textarea>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" id="editCancelBtn">Batal</button>
+      <button type="button" class="btn btn-primary" id="editSaveBtn">
+        <svg class="icon"><use href="#i-save"></use></svg>
+        Simpan Perubahan
+      </button>
+    </div>
+  </div>
+</dialog>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/master.js') }}"></script>
+{% endblock %}

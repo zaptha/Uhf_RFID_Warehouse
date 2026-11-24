@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+{% block page_eyebrow %}Operasional · Event & Loading{% endblock %}
+{% block content %}
+<div class="ops-page-head">
+  <div class="mode-switch" role="tablist" aria-label="Pilih mode operasional">
+    <button type="button" class="mode-btn is-active" data-mode="checkout" id="modeCheckoutBtn" role="tab" aria-selected="true">
+      <svg class="icon"><use href="#i-arrow-right"></use></svg>
+      Checkout · Keluar
+    </button>
+    <button type="button" class="mode-btn" data-mode="checkin" id="modeCheckinBtn" role="tab" aria-selected="false">
+      <svg class="icon"><use href="#i-rotate"></use></svg>
+      Checkin · Kembali
+    </button>
+  </div>
+  <div class="ops-head-actions">
+    <span class="reader-connection-inline" data-reader-state="offline" data-reader-inline>
+      <span class="status-dot"></span>
+      <span data-reader-label>Reader Offline</span>
+    </span>
+    <button type="button" class="btn btn-sm btn-outline-primary" id="restartReaderBtn" title="Putuskan lalu sambungkan ulang koneksi RFID Reader">
+      <svg class="icon"><use href="#i-refresh"></use></svg>
+      <span>Restart Reader</span>
+    </button>
+    <button type="button" class="btn btn-sm mute-btn" id="muteToggle" title="Mute/unmute alarm tag asing">
+      <svg class="icon" id="muteIcon"><use href="#i-bell"></use></svg>
+      <span id="muteLabel">Alarm aktif</span>
+    </button>
+    <button type="button" class="btn btn-sm btn-ghost hidden" id="resetSessionBtn" title="Kosongkan sesi saat ini">
+      <svg class="icon"><use href="#i-x-circle"></use></svg>
+      Kosongkan Sesi
+    </button>
+  </div>
+</div>
+
+<div class="ops-layout">
+  <section class="import-section hidden" id="importSection" aria-labelledby="importTitle">
+    <div class="import-inner">
+      <div class="import-icon"><svg class="icon"><use href="#i-upload"></use></svg></div>
+      <div class="import-copy">
+        <h2 id="importTitle">Import CSV Spesifik Event</h2>
+        <p>Unggah file CSV hasil checkout untuk memuat metadata dan daftar barang yang harus kembali.</p>
+      </div>
+      <div class="import-actions">
+        <label class="csv-dropzone" id="csvDropzone" for="csvFileInput">
+          <svg class="icon"><use href="#i-file-csv"></use></svg>
+          <span class="csv-dropzone-copy">
+            <strong id="csvFileName">Pilih file CSV event</strong>
+            <span>Klik atau tarik file ke sini · maks. 8 MB</span>
+          </span>
+          <input type="file" id="csvFileInput" accept=".csv,text/csv" class="hidden">
+        </label>
+        <span class="import-loaded hidden" id="csvLoadedMark">
+          <svg class="icon" style="width:14px;height:14px;"><use href="#i-check-circle"></use></svg>
+          <span id="csvLoadedText">CSV dimuat</span>
+        </span>
+        <button type="button" class="btn btn-sm btn-outline-primary" id="replaceCsvBtn" disabled>
+          <svg class="icon"><use href="#i-refresh"></use></svg>
+          Ganti CSV
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <div id="opsWarningStack" class="page-section-stack" style="gap: 10px;"></div>
+
+  <section class="card ops-metadata-card">
+    <header class="card-header">
+      <div class="card-header-copy">
+        <h2 class="card-title"><svg class="icon"><use href="#i-calendar"></use></svg>Metadata Event / Transaksi</h2>
+        <p class="card-subtitle">Informasi ini tercetak pada bukti serah terima dan tersimpan di riwayat.</p>
+      </div>
+      <span class="badge badge-neutral no-dot" id="metadataStatusBadge">Checkout</span>
+    </header>
+    <div class="card-body">
+      <div class="metadata-layout">
+        <div class="metadata-row metadata-row-top">
+          <div class="field">
+            <label for="eventName">Nama Event <span class="required-mark">*</span></label>
+            <input class="input" type="text" id="eventName" maxlength="180" placeholder="Contoh: Djarum Music Roadshow" required>
+          </div>
+          <div class="field">
+            <label for="clientName">Nama Klien <span class="required-mark">*</span></label>
+            <input class="input" type="text" id="clientName" maxlength="180" placeholder="Nama perusahaan / perorangan">
+          </div>
+          <div class="field">
+            <label for="picName">Nama PIC / Teknisi</label>
+            <input class="input" type="text" id="picName" maxlength="100" placeholder="Penanggung jawab klien">
+          </div>
+        </div>
+
+        <div class="metadata-row metadata-row-bottom">
+          <div class="field">
+            <label for="technician">Nama Staff</label>
+            <input class="input" type="text" id="technician" maxlength="100" placeholder="Nama staff bertugas">
+          </div>
+          <div class="field">
+            <label for="loadingDate">Tanggal Loading</label>
+            <input class="input" type="date" id="loadingDate">
+          </div>
+          <div class="field">
+            <label for="eventDate">Tanggal Event <span class="required-mark">*</span></label>
+            <input class="input" type="date" id="eventDate">
+          </div>
+          <div class="field">
+            <label for="unloadingDate">Tanggal Unloading</label>
+            <input class="input" type="date" id="unloadingDate">
+          </div>
+        </div>
+
+        <div class="metadata-row metadata-row-extra">
+          <div class="field">
+            <label for="eventLocation">Lokasi Event</label>
+            <input class="input" type="text" id="eventLocation" maxlength="200" placeholder="Venue / alamat acara">
+          </div>
+          <div class="field">
+            <label for="eventNotes">Catatan Transaksi <span class="label-optional">opsional</span></label>
+            <input class="input" type="text" id="eventNotes" maxlength="500" placeholder="Catatan tambahan untuk dokumen...">
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card ops-table-card">
+    <header class="card-header">
+      <div class="card-header-copy">
+        <h2 class="card-title"><svg class="icon"><use href="#i-box"></use></svg>Tabel Barang</h2>
+        <p class="card-subtitle" id="opsTableSubtitle">Barang yang cocok dengan master akan tampil di sini secara otomatis.</p>
+      </div>
+      <div class="btn-group">
+        <span class="badge badge-neutral no-dot" id="rowCountBadge">0 barang</span>
+        <button type="button" class="icon-btn hidden" id="clearRowsBtn" title="Kosongkan tabel barang" aria-label="Kosongkan tabel barang">
+          <svg class="icon"><use href="#i-trash"></use></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="table-wrap">
+      <table class="data-table ops-table" id="opsTable">
+        <thead>
+          <tr>
+            <th class="col-no">No</th>
+            <th>ID / EPC</th>
+            <th>Nama Barang</th>
+            <th>Kategori</th>
+            <th>Lokasi</th>
+            <th>Status</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="opsTableBody">
+          <tr>
+            <td colspan="7">
+              <div class="table-empty">
+                <div class="empty-icon"><svg class="icon"><use href="#i-scan"></use></svg></div>
+                <h3>Belum ada barang discan</h3>
+                <p>Tempel tag RFID ke antena. Untuk mode checkin, import CSV event terlebih dahulu.</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <footer class="table-footer">
+      <span id="opsTableFooter">0 barang · 0 valid · 0 tag asing</span>
+      <span class="status-inline" id="opsModeHint">Scan valid tidak membunyikan alarm.</span>
+    </footer>
+  </section>
+
+  <div id="checkinSummaryBanner" class="finalized-banner hidden">
+    <svg class="icon"><use href="#i-lock"></use></svg>
+    <span id="checkinSummaryText">Checkin difinalisasi. Status seluruh barang telah dikunci.</span>
+  </div>
+
+  <footer class="action-bar">
+    <div class="action-bar-copy">
+      <svg class="icon"><use href="#i-shield"></use></svg>
+      <span id="actionBarHint">Periksa data sebelum menyimpan. Simpan &amp; export akan mengubah status master menjadi Keluar.</span>
+    </div>
+    <div class="action-bar-buttons" id="checkoutActions">
+      <button type="button" class="btn btn-secondary" id="checkoutPdfBtn">
+        <svg class="icon"><use href="#i-printer"></use></svg>
+        Simpan / Cetak PDF
+      </button>
+      <button type="button" class="btn btn-primary" id="checkoutCsvBtn">
+        <svg class="icon"><use href="#i-file-csv"></use></svg>
+        Simpan &amp; Export CSV
+      </button>
+      <button type="button" class="btn btn-success hidden" id="checkoutDoneBtn">
+        <svg class="icon"><use href="#i-plus"></use></svg>
+        Sesi Baru
+      </button>
+    </div>
+    <div class="action-bar-buttons hidden" id="checkinActions">
+      <button type="button" class="btn btn-secondary" id="finalizeCheckinBtn">
+        <svg class="icon"><use href="#i-lock"></use></svg>
+        Finalisasi &amp; Kunci Status
+      </button>
+      <button type="button" class="btn btn-secondary" id="checkinPdfBtn">
+        <svg class="icon"><use href="#i-printer"></use></svg>
+        Export PDF Bukti Pengembalian
+      </button>
+      <button type="button" class="btn btn-primary" id="confirmCheckinBtn" disabled>
+        <svg class="icon"><use href="#i-check-circle"></use></svg>
+        Konfirmasi Selesai Checkin
+      </button>
+      <button type="button" class="btn btn-success hidden" id="checkinDoneBtn">
+        <svg class="icon"><use href="#i-plus"></use></svg>
+        Sesi Baru
+      </button>
+    </div>
+  </footer>
+</div>
+
+<dialog class="modal" id="csvExportDialog" aria-labelledby="csvDialogTitle">
+  <div class="modal-panel">
+    <div class="modal-head">
+      <div class="modal-icon"><svg class="icon"><use href="#i-file-csv"></use></svg></div>
+      <div>
+        <h2 id="csvDialogTitle">Export CSV Event</h2>
+        <p class="modal-kicker">Nama file dapat Anda ubah sebelum diunduh</p>
+      </div>
+      <button type="button" class="icon-btn modal-close" id="csvDialogClose" aria-label="Tutup">
+        <svg class="icon"><use href="#i-x"></use></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label for="csvExportFilename">Nama file CSV</label>
+        <input class="input mono" type="text" id="csvExportFilename" maxlength="140" spellcheck="false">
+        <p class="field-hint">Ekstensi .csv ditambahkan otomatis. Transaksi akan disimpan sebelum file diunduh.</p>
+      </div>
+      <div class="filename-preview">
+        <svg class="icon" style="width:14px;height:14px;"><use href="#i-download"></use></svg>
+        <span id="csvFilenamePreview">event_tanggal.csv</span>
+      </div>
+      <div class="alert alert-info" style="margin-top: 14px;">
+        <span class="alert-icon"><svg class="icon"><use href="#i-info"></use></svg></span>
+        <div class="alert-copy">Setelah disimpan, status barang pada master berubah menjadi <strong>Keluar</strong> dan transaksi muncul di riwayat.</div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" id="csvDialogCancel">Batal</button>
+      <button type="button" class="btn btn-primary" id="csvDialogDownload">
+        <svg class="icon"><use href="#i-save"></use></svg>
+        Simpan &amp; Unduh CSV
+      </button>
+    </div>
+  </div>
+</dialog>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='vendor/jspdf.umd.min.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/jspdf.plugin.autotable.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pdf.js') }}"></script>
+<script src="{{ url_for('static', filename='js/operasional.js') }}"></script>
+{% endblock %}

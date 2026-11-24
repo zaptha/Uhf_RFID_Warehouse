@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ code }} · {{ app_name }}</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/favicon.png') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+  <script>
+    (function () {
+      try {
+        var theme = localStorage.getItem('rfid_theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', theme === 'light' ? 'light' : 'dark');
+      } catch (error) { /* ignore */ }
+    }());
+  </script>
+</head>
+<body class="error-page" data-page="error">
+  {% include "_icons.html" %}
+  <main class="error-panel">
+    <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="{{ app_name }}">
+    <div class="error-code">{{ code }}</div>
+    <h1>{{ message }}</h1>
+    <p>Halaman atau tindakan yang Anda minta tidak dapat diproses. Silakan kembali ke workspace.</p>
+    {% if current_user %}
+    <a class="btn btn-primary" href="{{ url_for('pages.home') }}">
+      <svg class="icon"><use href="#i-arrow-right"></use></svg>
+      Kembali ke beranda
+    </a>
+    {% else %}
+    <a class="btn btn-primary" href="{{ url_for('auth.login') }}">
+      <svg class="icon"><use href="#i-arrow-right"></use></svg>
+      Kembali ke login
+    </a>
+    {% endif %}
+  </main>
+</body>
+</html>

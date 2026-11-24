@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block page_eyebrow %}Laporan · Jejak Operasional{% endblock %}
+{% block content %}
+<div class="page-section-stack">
+  <div class="history-tabs" role="tablist" aria-label="Jenis riwayat">
+    <button type="button" class="history-tab is-active" id="tabTransactions" role="tab" aria-selected="true">
+      <svg class="icon"><use href="#i-history"></use></svg>
+      Riwayat Transaksi
+    </button>
+    <button type="button" class="history-tab" id="tabLogs" role="tab" aria-selected="false">
+      <svg class="icon"><use href="#i-activity"></use></svg>
+      Log Aktivitas
+    </button>
+  </div>
+
+  <section id="transactionsPanel">
+    <div class="card history-filter-card" style="margin-bottom: 16px;">
+      <div class="history-filters">
+        <div class="search-field">
+          <svg class="icon"><use href="#i-search"></use></svg>
+          <input class="input" type="search" id="historySearch" placeholder="Cari kode, event, klien, PIC, lokasi..." aria-label="Cari transaksi">
+        </div>
+        <div class="field">
+          <label for="historyMode">Mode</label>
+          <select class="select" id="historyMode">
+            <option value="">Semua mode</option>
+            <option value="checkout">Checkout</option>
+            <option value="checkin">Checkin</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="historyDateFrom">Dari tanggal</label>
+          <input class="input" type="date" id="historyDateFrom">
+        </div>
+        <div class="field">
+          <label for="historyDateTo">Sampai tanggal</label>
+          <input class="input" type="date" id="historyDateTo">
+        </div>
+        <button type="button" class="btn btn-secondary" id="historyResetBtn">
+          <svg class="icon"><use href="#i-rotate"></use></svg>
+          Reset
+        </button>
+        <button type="button" class="btn btn-primary" id="historyRefreshBtn">
+          <svg class="icon"><use href="#i-search"></use></svg>
+          Terapkan
+        </button>
+      </div>
+    </div>
+
+    <section class="card">
+      <header class="card-header">
+        <div class="card-header-copy">
+          <h2 class="card-title"><svg class="icon"><use href="#i-history"></use></svg>Daftar Transaksi</h2>
+          <p class="card-subtitle" id="historySubtitle">Memuat riwayat transaksi dari database lokal...</p>
+        </div>
+        <span class="badge badge-neutral no-dot" id="historyCountBadge">0 transaksi</span>
+      </header>
+      <div class="table-wrap">
+        <table class="data-table history-table" id="historyTable">
+          <thead>
+            <tr>
+              <th>Kode Transaksi</th>
+              <th>Mode</th>
+              <th>Event</th>
+              <th>Klien / PIC</th>
+              <th>Tanggal Event</th>
+              <th>Teknisi</th>
+              <th>Item</th>
+              <th>Status</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody">
+            <tr>
+              <td colspan="9">
+                <div class="table-empty">
+                  <div class="empty-icon"><svg class="icon"><use href="#i-loader" style="animation: spin 1s linear infinite;"></use></svg></div>
+                  <h3>Memuat riwayat</h3>
+                  <p>Menyiapkan transaksi dari database lokal...</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <footer class="table-footer">
+        <span id="historyFooterText">Menampilkan 0 transaksi</span>
+        <div class="pagination" id="historyPagination"></div>
+      </footer>
+    </section>
+  </section>
+
+  <section class="card hidden" id="logsPanel">
+    <header class="card-header">
+      <div class="card-header-copy">
+        <h2 class="card-title"><svg class="icon"><use href="#i-activity"></use></svg>Log Aktivitas Sistem</h2>
+        <p class="card-subtitle">Jejak login, perubahan master, transaksi, dan pengaturan perangkat.</p>
+      </div>
+      <div class="btn-group">
+        <div class="search-field" style="min-width: 220px;">
+          <svg class="icon"><use href="#i-search"></use></svg>
+          <input class="input" type="search" id="logsSearch" placeholder="Cari aktivitas..." aria-label="Cari log aktivitas">
+        </div>
+        <button type="button" class="icon-btn" id="logsRefreshBtn" title="Muat ulang log" aria-label="Muat ulang log">
+          <svg class="icon"><use href="#i-refresh"></use></svg>
+        </button>
+      </div>
+    </header>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Waktu</th>
+            <th>Pengguna</th>
+            <th>Aksi</th>
+            <th>Detail</th>
+            <th>IP</th>
+          </tr>
+        </thead>
+        <tbody id="logsBody">
+          <tr><td colspan="5"><div class="table-empty"><h3>Muat log aktivitas</h3><p>Klik tab log untuk memuat data.</p></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <footer class="table-footer">
+      <span id="logsFooterText">Menampilkan 0 baris log terbaru</span>
+      <span class="status-inline"><svg class="icon" style="width:13px;height:13px;"><use href="#i-shield"></use></svg>Hanya dapat diakses Admin &amp; Petugas</span>
+    </footer>
+  </section>
+</div>
+
+<dialog class="modal modal-wide" id="transactionDetailDialog" aria-labelledby="transactionDetailTitle">
+  <div class="modal-panel">
+    <div class="modal-head">
+      <div class="modal-icon"><svg class="icon"><use href="#i-file-text"></use></svg></div>
+      <div>
+        <h2 id="transactionDetailTitle">Detail Transaksi</h2>
+        <p class="modal-kicker" id="transactionDetailCode">—</p>
+      </div>
+      <button type="button" class="icon-btn modal-close" id="detailCloseBtn" aria-label="Tutup">
+        <svg class="icon"><use href="#i-x"></use></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="transactionDetailBody">
+      <div class="table-empty">
+        <div class="empty-icon"><svg class="icon"><use href="#i-loader" style="animation: spin 1s linear infinite;"></use></svg></div>
+        <h3>Memuat detail</h3>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" id="detailCloseFooter">Tutup</button>
+      <button type="button" class="btn btn-primary" id="detailDownloadBtn" disabled>
+        <svg class="icon"><use href="#i-download"></use></svg>
+        Unduh CSV Transaksi
+      </button>
+    </div>
+  </div>
+</dialog>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/riwayat.js') }}"></script>
+{% endblock %}
