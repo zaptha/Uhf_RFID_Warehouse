@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <meta name="theme-color" content="#08111f">
+  <title>{{ page_title }} · {{ app_name }}</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/favicon.png') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/logo-256.png') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/master.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/operasional.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/history-admin.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+  <script>
+    (function () {
+      try {
+        var theme = localStorage.getItem('rfid_theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', theme === 'light' ? 'light' : 'dark');
+      } catch (error) { /* localStorage may be disabled */ }
+    }());
+  </script>
+  {% block head_extra %}{% endblock %}
+</head>
+<body data-page="{{ active_page }}" class="{% block body_class %}{% endblock %}">
+  {% include "_icons.html" %}
+  <div class="app-shell">
+    <aside class="sidebar" id="appSidebar" aria-label="Navigasi utama">
+      <div class="sidebar-brand">
+        <a class="brand-lockup" href="{{ url_for('pages.home') }}" aria-label="Duren Sawit Imaji beranda">
+          <img
+            src="{{ url_for('static', filename='img/brand-duren-sawit-imaji.png') }}"
+            alt="Duren Sawit Imaji"
+            class="brand-logo-full"
+          >
+        </a>
+        <button type="button" class="icon-btn sidebar-close" id="sidebarClose" aria-label="Tutup navigasi">
+          <svg class="icon"><use href="#i-x"></use></svg>
+        </button>
+      </div>
+
+      <nav class="sidebar-nav">
+        <p class="nav-label">Operasional</p>
+        {% if current_user.role in ['admin', 'staff'] %}
+        <a class="nav-link {{ 'is-active' if active_page == 'master' }}" href="{{ url_for('pages.master') }}">
+          <svg class="icon"><use href="#i-box"></use></svg>
+          <span>Master Barang</span>
+        </a>
+        {% endif %}
+        <a class="nav-link {{ 'is-active' if active_page == 'operasional' }}" href="{{ url_for('pages.operasional') }}">
+          <svg class="icon"><use href="#i-scan"></use></svg>
+          <span>Checkout / Checkin</span>
+          <span class="nav-pulse" aria-hidden="true"></span>
+        </a>
+
+        {% if current_user.role in ['admin', 'staff'] %}
+        <p class="nav-label">Laporan</p>
+        <a class="nav-link {{ 'is-active' if active_page == 'riwayat' }}" href="{{ url_for('pages.riwayat') }}">
+          <svg class="icon"><use href="#i-history"></use></svg>
+          <span>Riwayat Transaksi</span>
+        </a>
+        {% endif %}
+
+        {% if current_user.role == 'admin' %}
+        <p class="nav-label">Sistem</p>
+        <a class="nav-link {{ 'is-active' if active_page == 'admin' }}" href="{{ url_for('pages.admin') }}">
+          <svg class="icon"><use href="#i-settings"></use></svg>
+          <span>Panel Admin</span>
+        </a>
+        {% endif %}
+      </nav>
+
+      <div class="sidebar-bottom">
+        {% if active_page == 'operasional' %}
+        <aside class="sidebar-session" aria-label="Ringkasan sesi operasional">
+          <div class="sidebar-session-head">
+            <h2>Ringkasan Sesi</h2>
+            <span class="badge badge-checkout" id="sessionModeBadge">Checkout</span>
+          </div>
+          <div class="sidebar-session-rows">
+            <div class="sidebar-session-row">
+              <span id="summaryFirstLabel">Total Discan</span>
+              <strong id="summaryFirstValue">0</strong>
+            </div>
+            <div class="sidebar-session-row">
+              <span id="summarySecondLabel">Valid</span>
+              <strong class="is-success" id="summarySecondValue">0</strong>
+            </div>
+            <div class="sidebar-session-row">
+              <span id="summaryThirdLabel">Tag Asing</span>
+              <strong class="is-danger" id="summaryThirdValue">0</strong>
+            </div>
+          </div>
+          <p class="sidebar-session-note" id="sessionNote">Pindai tag untuk mulai menyusun daftar barang keluar.</p>
+        </aside>
+        {% endif %}
+
+        <div class="reader-status-card" id="readerStatusCard" data-reader-state="offline">
+          <div class="reader-status-head">
+            <span class="status-dot" data-reader-dot></span>
+            <span class="reader-status-title">RFID Reader</span>
+            <span class="status-chip" data-reader-label>Offline</span>
+          </div>
+          <p class="reader-status-detail" data-reader-detail>Menunggu koneksi reader...</p>
+          <div class="reader-status-meta">
+            <svg class="icon"><use href="#i-wifi"></use></svg>
+            <span data-reader-address>192.168.0.97:6000</span>
+          </div>
+        </div>
+
+        <div class="sidebar-user">
+          <div class="avatar" aria-hidden="true">{{ current_user.full_name[:2]|upper }}</div>
+          <div class="sidebar-user-copy">
+            <strong>{{ current_user.full_name }}</strong>
+            <span>{{ role_labels[current_user.role] }} · @{{ current_user.username }}</span>
+          </div>
+          <form action="{{ url_for('auth.logout') }}" method="post" class="logout-form">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+            <button type="submit" class="icon-btn" title="Keluar" aria-label="Keluar dari aplikasi">
+              <svg class="icon"><use href="#i-logout"></use></svg>
+            </button>
+          </form>
+        </div>
+        <div class="sidebar-footnote">
+          <span>Sistem RFID UHF · v{{ app_version }}</span>
+          <span class="offline-badge"><span class="dot"></span> Offline LAN</span>
+        </div>
+      </div>
+    </aside>
+    <div class="sidebar-backdrop" id="sidebarBackdrop" hidden></div>
+
+    <div class="main-shell">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button type="button" class="icon-btn menu-toggle" id="menuToggle" aria-label="Buka navigasi">
+            <svg class="icon"><use href="#i-menu"></use></svg>
+          </button>
+          <div class="page-heading">
+            <span class="page-eyebrow">{% block page_eyebrow %}Duren Sawit Imaji · Workspace{% endblock %}</span>
+            <h1>{{ page_title }}</h1>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <div class="live-clock" title="Waktu lokal perangkat ini">
+            <svg class="icon"><use href="#i-clock"></use></svg>
+            <span data-live-clock>{{ now.strftime('%d %b %Y · %H:%M') }}</span>
+          </div>
+          <div class="reader-pill" data-reader-pill data-reader-state="offline" title="Status koneksi RFID Reader">
+            <span class="status-dot" data-reader-dot></span>
+            <span data-reader-label>Reader Offline</span>
+          </div>
+          <button type="button" class="icon-btn theme-toggle" id="themeToggle" aria-label="Ganti tema terang/gelap" title="Ganti tema">
+            <svg class="icon theme-icon-sun"><use href="#i-sun"></use></svg>
+            <svg class="icon theme-icon-moon"><use href="#i-moon"></use></svg>
+          </button>
+        </div>
+      </header>
+
+      <main class="content" id="mainContent">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+          <div class="flash-stack" id="flashStack">
+            {% for category, message in messages %}
+            <div class="flash flash-{{ category }}" role="status">
+              <span class="flash-icon">
+                {% if category == 'success' %}<svg class="icon"><use href="#i-check-circle"></use></svg>
+                {% elif category in ['danger', 'warning'] %}<svg class="icon"><use href="#i-alert"></use></svg>
+                {% else %}<svg class="icon"><use href="#i-info"></use></svg>{% endif %}
+              </span>
+              <span class="flash-message">{{ message }}</span>
+              <button type="button" class="flash-close" aria-label="Tutup notifikasi">
+                <svg class="icon"><use href="#i-x"></use></svg>
+              </button>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+      </main>
+
+      <footer class="app-footer">
+        <span>© {{ current_year }} {{ company.company_name or app_name }}</span>
+        <span class="footer-sep">·</span>
+        <span>Sistem inventaris RFID UHF lokal</span>
+      </footer>
+    </div>
+  </div>
+
+  <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="true"></div>
+
+  <dialog class="modal confirm-modal" id="appConfirmDialog" aria-labelledby="appConfirmTitle">
+    <div class="modal-panel">
+      <div class="modal-head">
+        <div class="modal-icon" id="appConfirmIcon"><svg class="icon"><use href="#i-alert"></use></svg></div>
+        <div>
+          <h2 id="appConfirmTitle">Konfirmasi</h2>
+          <p class="modal-kicker">Tindakan ini membutuhkan konfirmasi</p>
+        </div>
+        <button type="button" class="icon-btn modal-close" data-confirm-cancel aria-label="Tutup">
+          <svg class="icon"><use href="#i-x"></use></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p id="appConfirmMessage" class="confirm-message"></p>
+        <div class="confirm-extra" id="appConfirmExtra" hidden>
+          <label for="appConfirmInput" id="appConfirmInputLabel">Ketik konfirmasi</label>
+          <input type="text" id="appConfirmInput" autocomplete="off" spellcheck="false">
+          <p class="field-hint" id="appConfirmHint"></p>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" data-confirm-cancel>Batal</button>
+        <button type="button" class="btn btn-primary" id="appConfirmOk">Ya, lanjutkan</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div class="global-busy" id="globalBusy" hidden aria-hidden="true">
+    <div class="global-busy-panel">
+      <span class="spinner-lg"></span>
+      <p id="globalBusyText">Memproses...</p>
+    </div>
+  </div>
+
+  <script>
+    window.RFID_APP = {
+      csrfToken: {{ csrf_token|tojson }},
+      authenticated: true,
+      page: {{ active_page|tojson }},
+      appName: {{ app_name|tojson }},
+      appVersion: {{ app_version|tojson }},
+      user: {{ current_user|tojson }},
+      company: {{ company|tojson }},
+      endpoints: {
+        readerStatus: {{ url_for('pages.api_reader_status')|tojson }}
+      }
+    };
+  </script>
+  <script src="{{ url_for('static', filename='vendor/socket.io.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
