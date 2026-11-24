@@ -1,0 +1,346 @@
+{% extends "base.html" %}
+{% block page_eyebrow %}Sistem · Kendali Administrator{% endblock %}
+{% block content %}
+<div class="page-section-stack">
+  <section class="stats-grid" aria-label="Ringkasan sistem">
+    <article class="stat-card stat-total">
+      <div class="stat-icon"><svg class="icon"><use href="#i-users"></use></svg></div>
+      <div class="stat-copy">
+        <p class="stat-label">Akun Pengguna</p>
+        <p class="stat-value" id="adminStatUsers">0</p>
+        <p class="stat-meta">Admin, petugas, teknisi</p>
+      </div>
+    </article>
+    <article class="stat-card stat-available">
+      <div class="stat-icon"><svg class="icon"><use href="#i-box"></use></svg></div>
+      <div class="stat-copy">
+        <p class="stat-label">Master Barang</p>
+        <p class="stat-value" id="adminStatItems">0</p>
+        <p class="stat-meta" id="adminStatItemsMeta">0 tersedia</p>
+      </div>
+    </article>
+    <article class="stat-card stat-out">
+      <div class="stat-icon"><svg class="icon"><use href="#i-scan"></use></svg></div>
+      <div class="stat-copy">
+        <p class="stat-label">Transaksi Checkout</p>
+        <p class="stat-value" id="adminStatCheckout">0</p>
+        <p class="stat-meta">Total event keluar</p>
+      </div>
+    </article>
+    <article class="stat-card stat-missing">
+      <div class="stat-icon"><svg class="icon"><use href="#i-history"></use></svg></div>
+      <div class="stat-copy">
+        <p class="stat-label">Transaksi Checkin</p>
+        <p class="stat-value" id="adminStatCheckin">0</p>
+        <p class="stat-meta">Total sesi pengembalian</p>
+      </div>
+    </article>
+  </section>
+
+  <div class="admin-grid">
+    <section class="card admin-card">
+      <header class="card-header">
+        <div class="card-header-copy">
+          <h2 class="card-title"><svg class="icon"><use href="#i-wifi"></use></svg>Koneksi RFID &amp; Jaringan</h2>
+          <p class="card-subtitle">Pengaturan tersimpan di SQLite dan diterapkan tanpa edit kode.</p>
+        </div>
+        <span class="badge badge-primary no-dot" id="adminReaderBadge">Reader</span>
+      </header>
+      <div class="card-body">
+        <div class="admin-status-bar" data-reader-state="offline" id="adminReaderStatus">
+          <span class="status-dot" data-reader-dot></span>
+          <div style="flex:1;min-width:0;">
+            <strong data-reader-label>Reader Offline</strong>
+            <p class="field-hint" data-reader-detail style="margin-top:1px;">Menunggu koneksi...</p>
+          </div>
+          <span class="mono" data-reader-address>192.168.0.97:6000</span>
+        </div>
+
+        <form id="networkForm" style="margin-top:15px;" autocomplete="off">
+          <div class="form-grid" style="gap:13px;">
+            <div class="field">
+              <label for="settingReaderIp">IP RFID Reader</label>
+              <input class="input mono" type="text" id="settingReaderIp" name="reader_ip" placeholder="192.168.0.97" required>
+            </div>
+            <div class="field">
+              <label for="settingReaderPort">Port TCP</label>
+              <input class="input mono" type="number" id="settingReaderPort" name="reader_port" min="1" max="65535" required>
+            </div>
+            <div class="field">
+              <label for="settingRouterIp">IP Router Referensi</label>
+              <input class="input mono" type="text" id="settingRouterIp" name="router_ip" placeholder="192.168.0.1" required>
+            </div>
+            <div class="field">
+              <label for="settingReconnect">Auto-Reconnect (detik)</label>
+              <input class="input" type="number" id="settingReconnect" name="reconnect_seconds" min="1" max="60" step="1" required>
+            </div>
+            <div class="field">
+              <label for="settingCooldown">Cooldown Tag (detik)</label>
+              <input class="input" type="number" id="settingCooldown" name="tag_cooldown_seconds" min="1" max="30" step="0.5" required>
+            </div>
+            <div class="field">
+              <label>IP Server Lokal</label>
+              <div class="server-ip-list" id="serverIpList">
+                <span class="server-ip">Memuat...</span>
+              </div>
+              <p class="field-hint">Gunakan IP ini pada browser PC client.</p>
+            </div>
+          </div>
+          <div class="form-actions" style="margin-top:15px;">
+            <button type="button" class="btn btn-secondary" id="restartReaderBtn">
+              <svg class="icon"><use href="#i-refresh"></use></svg>
+              Restart Koneksi
+            </button>
+            <button type="submit" class="btn btn-primary" id="saveNetworkBtn">
+              <svg class="icon"><use href="#i-save"></use></svg>
+              Simpan &amp; Restart Koneksi
+            </button>
+          </div>
+        </form>
+
+        <hr class="inline-divider">
+        <div class="section-heading" style="margin-bottom: 8px;">
+          <div>
+            <h2 style="font-size:12px;color:var(--text);font-weight:700;">Diagnostik reader</h2>
+            <p style="font-size:10px;color:var(--muted);">Frame terakhir yang diterima dari perangkat.</p>
+          </div>
+          <span class="badge badge-neutral no-dot" id="adminLastTag">Belum ada tag</span>
+        </div>
+        <div class="debug-frame" id="lastFrameHex">Belum ada frame TCP.</div>
+        <div class="form-actions" style="margin-top:12px;justify-content:flex-start;">
+          <div class="input-with-prefix" style="flex:1;min-width:180px;">
+            <span>EPC</span>
+            <input class="input mono" type="text" id="simulateEpc" placeholder="E280117000000212345678" maxlength="64" spellcheck="false">
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-primary" id="simulateTagBtn">
+            <svg class="icon"><use href="#i-radio"></use></svg>
+            Simulasi Tag
+          </button>
+        </div>
+        <p class="field-hint" style="margin-top:6px;">Hanya untuk uji coba tanpa perangkat fisik. Tag dikirim ke browser operasional yang terbuka.</p>
+      </div>
+    </section>
+
+    <section class="card admin-card">
+      <header class="card-header">
+        <div class="card-header-copy">
+          <h2 class="card-title"><svg class="icon"><use href="#i-server"></use></svg>Identitas Perusahaan</h2>
+          <p class="card-subtitle">Dipakai pada kop dokumen PDF surat jalan dan bukti pengembalian.</p>
+        </div>
+      </header>
+      <div class="card-body">
+        <form id="companyForm" autocomplete="off">
+          <div class="form-grid" style="gap:13px;">
+            <div class="field field-span-2">
+              <label for="companyName">Nama Perusahaan</label>
+              <input class="input" type="text" id="companyName" maxlength="180" required>
+            </div>
+            <div class="field field-span-2">
+              <label for="companyTagline">Tagline / Bidang Usaha</label>
+              <input class="input" type="text" id="companyTagline" maxlength="200">
+            </div>
+            <div class="field field-span-2">
+              <label for="companyAddress">Alamat</label>
+              <textarea class="textarea" id="companyAddress" maxlength="250" rows="2"></textarea>
+            </div>
+            <div class="field">
+              <label for="companyPhone">Telepon</label>
+              <input class="input" type="text" id="companyPhone" maxlength="60">
+            </div>
+            <div class="field">
+              <label for="companyEmail">Email</label>
+              <input class="input" type="email" id="companyEmail" maxlength="120">
+            </div>
+          </div>
+          <div class="form-actions" style="margin-top:15px;">
+            <button type="submit" class="btn btn-primary" id="saveCompanyBtn">
+              <svg class="icon"><use href="#i-save"></use></svg>
+              Simpan Identitas
+            </button>
+          </div>
+        </form>
+
+        <hr class="inline-divider">
+        <div class="db-info">
+          <svg class="icon"><use href="#i-database"></use></svg>
+          <div class="db-info-copy">
+            <strong id="dbFileName">rental_rfid.db</strong>
+            <span id="dbFilePath">data/rental_rfid.db</span>
+          </div>
+          <span class="badge badge-primary no-dot" id="dbSize">0 KB</span>
+        </div>
+        <div class="form-actions" style="margin-top:12px;justify-content:flex-start;">
+          <button type="button" class="btn btn-secondary" id="backupDbBtn">
+            <svg class="icon"><use href="#i-download"></use></svg>
+            Download Backup Database (.db)
+          </button>
+        </div>
+        <p class="field-hint" style="margin-top:8px;">Backup dibuat dengan SQLite Online Backup API sehingga aman dilakukan saat server berjalan.</p>
+      </div>
+    </section>
+
+    <section class="card admin-card span-full">
+      <header class="card-header">
+        <div class="card-header-copy">
+          <h2 class="card-title"><svg class="icon"><use href="#i-users"></use></svg>Manajemen Akun</h2>
+          <p class="card-subtitle">Atur akses Admin, Petugas (staff), dan Teknisi.</p>
+        </div>
+        <div class="btn-group">
+          <span class="badge badge-neutral no-dot" id="userCountBadge">0 akun</span>
+          <button type="button" class="btn btn-primary" id="addUserBtn">
+            <svg class="icon"><use href="#i-user-plus"></use></svg>
+            Tambah Akun
+          </button>
+        </div>
+      </header>
+      <div class="table-wrap">
+        <table class="data-table user-table">
+          <thead>
+            <tr>
+              <th>Nama Lengkap</th>
+              <th>Username</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Dibuat</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="usersBody">
+            <tr><td colspan="6"><div class="table-empty"><h3>Memuat akun...</h3></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <footer class="table-footer">
+        <span>Admin dapat mengelola semua aspek aplikasi. Petugas fokus inventaris &amp; operasional; Teknisi fokus checkout/checkin.</span>
+      </footer>
+    </section>
+
+    <section class="card admin-card danger-zone">
+      <header class="card-header">
+        <div class="card-header-copy">
+          <h2 class="card-title"><svg class="icon"><use href="#i-alert"></use></svg>Pemeliharaan Database</h2>
+          <p class="card-subtitle">Tindakan permanen. Unduh backup terlebih dahulu.</p>
+        </div>
+      </header>
+      <div class="card-body">
+        <div class="danger-action">
+          <div class="danger-action-copy">
+            <strong>Hapus seluruh riwayat transaksi</strong>
+            <span>Menghapus semua transaksi dan item transaksi, lalu mereset status master menjadi Tersedia.</span>
+          </div>
+          <button type="button" class="btn btn-sm btn-danger" data-danger-scope="transactions">Hapus Riwayat</button>
+        </div>
+        <div class="danger-action">
+          <div class="danger-action-copy">
+            <strong>Bersihkan log aktivitas</strong>
+            <span>Menghapus semua baris jejak aktivitas pengguna dari database.</span>
+          </div>
+          <button type="button" class="btn btn-sm btn-danger" data-danger-scope="logs">Bersihkan Log</button>
+        </div>
+        <div class="danger-action">
+          <div class="danger-action-copy">
+            <strong>Hapus seluruh master barang</strong>
+            <span>Menghapus permanen semua barang pada inventaris. Riwayat transaksi tetap tersimpan.</span>
+          </div>
+          <button type="button" class="btn btn-sm btn-danger" data-danger-scope="items">Hapus Master</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card admin-card danger-zone">
+      <header class="card-header">
+        <div class="card-header-copy">
+          <h2 class="card-title"><svg class="icon"><use href="#i-power"></use></svg>Kendali Server</h2>
+          <p class="card-subtitle">Hentikan layanan dengan aman dari Panel Admin.</p>
+        </div>
+      </header>
+      <div class="card-body">
+        <div class="admin-server-actions">
+          <div>
+            <strong>Matikan server lokal</strong>
+            <span>Semua klien akan kehilangan koneksi. Data yang sudah disimpan tetap aman.</span>
+          </div>
+          <button type="button" class="btn btn-danger" id="shutdownServerBtn">
+            <svg class="icon"><use href="#i-power"></use></svg>
+            Matikan Server
+          </button>
+        </div>
+        <p class="field-hint" style="margin-top:10px;">
+          Jika aplikasi dijalankan melalui launcher tray, server juga dapat dihentikan dari menu tray.
+        </p>
+        <p class="field-hint" style="margin-top:6px;">Versi aplikasi: <strong id="adminAppVersion">—</strong> · Port server: <strong id="adminServerPort">5000</strong></p>
+      </div>
+    </section>
+  </div>
+</div>
+
+<dialog class="modal" id="userDialog" aria-labelledby="userDialogTitle">
+  <div class="modal-panel">
+    <div class="modal-head">
+      <div class="modal-icon"><svg class="icon"><use href="#i-users"></use></svg></div>
+      <div>
+        <h2 id="userDialogTitle">Tambah Akun</h2>
+        <p class="modal-kicker" id="userDialogSubtitle">Buat akses baru untuk petugas</p>
+      </div>
+      <button type="button" class="icon-btn modal-close" id="userCloseBtn" aria-label="Tutup">
+        <svg class="icon"><use href="#i-x"></use></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="userForm" class="user-modal-form" autocomplete="off">
+        <input type="hidden" id="userId">
+        <div class="form-grid">
+          <div class="field">
+            <label for="userUsername">Username <span class="required-mark">*</span></label>
+            <input class="input mono" type="text" id="userUsername" maxlength="32" required spellcheck="false" placeholder="contoh: petugas01">
+            <p class="field-hint">3-32 karakter: huruf kecil, angka, titik, minus, underscore.</p>
+          </div>
+          <div class="field">
+            <label for="userFullName">Nama Lengkap <span class="required-mark">*</span></label>
+            <input class="input" type="text" id="userFullName" maxlength="100" required placeholder="Nama petugas">
+          </div>
+          <div class="field">
+            <label for="userRole">Role <span class="required-mark">*</span></label>
+            <select class="select" id="userRole">
+              <option value="staff">Petugas — Master &amp; operasional</option>
+              <option value="teknisi">Teknisi — Checkout/checkin saja</option>
+              <option value="admin">Admin — Akses penuh</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="userPassword">Password <span class="required-mark" id="passwordRequiredMark">*</span></label>
+            <input class="input" type="password" id="userPassword" minlength="6" maxlength="128" autocomplete="new-password" placeholder="Minimal 6 karakter">
+            <p class="field-hint" id="passwordHint">Wajib untuk akun baru.</p>
+          </div>
+          <div class="field field-span-2">
+            <label class="check-row" for="userActive">
+              <input type="checkbox" id="userActive" checked>
+              <span>Akun aktif dan dapat login</span>
+            </label>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" id="userCancelBtn">Batal</button>
+      <button type="button" class="btn btn-primary" id="userSaveBtn">
+        <svg class="icon"><use href="#i-save"></use></svg>
+        Simpan Akun
+      </button>
+    </div>
+  </div>
+</dialog>
+
+<div class="shutdown-screen hidden" id="shutdownScreen">
+  <div class="shutdown-panel">
+    <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="">
+    <h1>Server telah dimatikan</h1>
+    <p>Layanan sudah dihentikan dengan aman. Anda dapat menutup tab browser ini atau menjalankan kembali launcher server.</p>
+    <span class="server-tag">Duren Sawit Imaji · Offline LAN Server</span>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}
