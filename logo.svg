@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="RFID Rental logo">
+  <defs>
+    <linearGradient id="tagGradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5eead4"/>
+      <stop offset="1" stop-color="#0e9f8c"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="496" height="496" rx="114" fill="#0a1324"/>
+  <rect x="20" y="20" width="472" height="472" rx="102" fill="#0e1b31"/>
+  <rect x="8" y="8" width="496" height="496" rx="114" fill="none" stroke="#18314d" stroke-width="4"/>
+  <g fill="none" stroke-linecap="round">
+    <path d="M278 200 A66 66 0 0 1 278 308" stroke="#5eead4" stroke-width="20"/>
+    <path d="M256 154 A112 112 0 0 1 256 354" stroke="#2dd4bf" stroke-width="20"/>
+    <path d="M234 108 A158 158 0 0 1 234 400" stroke="#0e9f8c" stroke-width="20"/>
+  </g>
+  <circle cx="312" cy="254" r="15" fill="#99f6e4"/>
+  <path d="M92 174 H232 L296 238 V348 H92 Z" fill="url(#tagGradient)"/>
+  <path d="M232 174 V238 H296" fill="none" stroke="#0e1b31" stroke-width="8" stroke-linejoin="round"/>
+  <circle cx="122" cy="210" r="13" fill="#0e1b31"/>
+  <rect x="160" y="246" width="90" height="12" rx="6" fill="#0e1b31"/>
+  <rect x="160" y="276" width="64" height="12" rx="6" fill="#0e1b31"/>
+  <text x="145" y="348" fill="#f8fafc" font-family="Segoe UI, Arial, sans-serif" font-size="56" font-weight="700">RFID</text>
+</svg>
